@@ -2,6 +2,7 @@
  * Vyshnavi Vishnubhotla - Portfolio Main JavaScript
  * 100% compatible across all JavaScript engines:
  * - Google Chrome & modern web browsers (V8)
+ * - GitHub Pages production deployments
  * - Windows Script Host (JScript ES3/ES5 compatibility)
  */
 
@@ -32,33 +33,109 @@ if (typeof WScript !== 'undefined') {
 }
 
 // =============================================================
-// 2. Client-Side Browser Implementation (Google Chrome / Web)
+// 2. Client-Side Browser Implementation (Google Chrome & GitHub Pages)
 // =============================================================
 var toastTimeout = null;
+var isPortfolioInitialized = false;
 
-// Ensure execution once DOM is ready in browser
+function safeExecute(name, fn) {
+  try {
+    fn();
+  } catch (err) {
+    if (typeof console !== 'undefined' && console.error) {
+      console.error('Error in ' + name + ':', err);
+    }
+  }
+}
+
+function initializePortfolio() {
+  if (isPortfolioInitialized) { return; }
+  isPortfolioInitialized = true;
+
+  // Execute each feature in an isolated try/catch so one module never blocks another
+  safeExecute('typingEffect', initTypingEffect);
+  safeExecute('themeToggle', initThemeToggle);
+  safeExecute('mobileNav', initMobileNav);
+  safeExecute('scrollSpy', initScrollSpy);
+  safeExecute('skillsFilter', initSkillsFilter);
+  safeExecute('contactActions', initContactActions);
+  safeExecute('backToTop', initBackToTop);
+}
+
+// Start immediately if DOM elements already exist (since script is at the bottom of the body),
+// or listen to DOMContentLoaded and load as fallbacks.
 if (typeof document !== 'undefined') {
-  if (document.readyState === 'loading') {
+  if (document.getElementById('typed-text')) {
+    initializePortfolio();
+  } else if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializePortfolio);
+    window.addEventListener('load', initializePortfolio);
   } else {
     initializePortfolio();
   }
 }
 
-function initializePortfolio() {
-  try {
-    initThemeToggle();
-    initTypingEffect();
-    initMobileNav();
-    initScrollSpy();
-    initSkillsFilter();
-    initContactActions();
-    initBackToTop();
-  } catch (err) {
-    if (typeof console !== 'undefined' && console.error) {
-      console.error('Initialization error:', err);
+/* ==========================================================
+   Typing Effect for Hero Subtitle (Robust & Error-Free)
+   ========================================================== */
+function initTypingEffect() {
+  var typingTarget = document.getElementById('typed-text');
+  if (!typingTarget) { return; }
+
+  var roles = [
+    'AWS Cloud Specialist',
+    'DevOps Enthusiast',
+    'Generative AI Builder',
+    'Linux & Networking Practitioner',
+    'Solutions Architect Aspirant'
+  ];
+
+  var roleIndex = 0;
+  var currentWord = roles[roleIndex];
+
+  // Check if target already has initial text (e.g. static fallback in HTML)
+  var initialText = typingTarget.textContent ? typingTarget.textContent.replace(/^\s+|\s+$/g, '') : '';
+  var hasInitialText = (initialText.length > 0);
+
+  var charIndex = hasInitialText ? initialText.length : 0;
+  var isDeleting = hasInitialText;
+  var initialDelay = hasInitialText ? 1800 : 200;
+
+  function tick() {
+    var fullText = roles[roleIndex];
+    if (!fullText) {
+      roleIndex = 0;
+      fullText = roles[0];
     }
+
+    if (isDeleting) {
+      charIndex--;
+      if (charIndex < 0) { charIndex = 0; }
+      typingTarget.textContent = fullText.substring(0, charIndex);
+    } else {
+      charIndex++;
+      if (charIndex > fullText.length) { charIndex = fullText.length; }
+      typingTarget.textContent = fullText.substring(0, charIndex);
+    }
+
+    var speed = isDeleting ? 45 : 90;
+
+    // Word completely typed out
+    if (!isDeleting && charIndex >= fullText.length) {
+      charIndex = fullText.length;
+      speed = 2000; // Pause at end of word so user can read comfortably
+      isDeleting = true;
+    } else if (isDeleting && charIndex <= 0) {
+      charIndex = 0;
+      isDeleting = false;
+      roleIndex = (roleIndex + 1) % roles.length;
+      speed = 400; // Pause before typing next word
+    }
+
+    setTimeout(tick, speed);
   }
+
+  setTimeout(tick, initialDelay);
 }
 
 /* ==========================================================
@@ -83,12 +160,14 @@ function initThemeToggle() {
   try {
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       prefersDark = true;
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      prefersDark = false;
     }
   } catch (e) {
     prefersDark = true;
   }
 
-  var currentTheme = savedTheme ? savedTheme : (prefersDark ? 'dark' : 'dark');
+  var currentTheme = savedTheme ? savedTheme : (prefersDark ? 'dark' : 'light');
   document.documentElement.setAttribute('data-theme', currentTheme);
   updateThemeIcon(currentTheme);
 
@@ -139,55 +218,6 @@ function initThemeToggle() {
       }
     }
   }
-}
-
-/* ==========================================================
-   Typing Effect for Hero Subtitle
-   ========================================================== */
-function initTypingEffect() {
-  var typingTarget = document.getElementById('typed-text');
-  if (!typingTarget) { return; }
-
-  var roles = [
-    'AWS Cloud Specialist',
-    'DevOps Enthusiast',
-    'Generative AI Builder',
-    'Linux & Networking Practitioner',
-    'Solutions Architect Aspirant'
-  ];
-
-  var roleIdx = 0;
-  var charIdx = 0;
-  var isDeleting = false;
-  var typingSpeed = 90;
-
-  function type() {
-    var currentRole = roles[roleIdx];
-    if (!currentRole) { return; }
-
-    if (isDeleting) {
-      typingTarget.textContent = currentRole.substring(0, charIdx - 1);
-      charIdx--;
-      typingSpeed = 45;
-    } else {
-      typingTarget.textContent = currentRole.substring(0, charIdx + 1);
-      charIdx++;
-      typingSpeed = 95;
-    }
-
-    if (!isDeleting && charIdx === currentRole.length) {
-      typingSpeed = 1800;
-      isDeleting = true;
-    } else if (isDeleting && charIdx === 0) {
-      isDeleting = false;
-      roleIdx = (roleIdx + 1) % roles.length;
-      typingSpeed = 400;
-    }
-
-    setTimeout(type, typingSpeed);
-  }
-
-  type();
 }
 
 /* ==========================================================
