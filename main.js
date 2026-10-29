@@ -76,7 +76,7 @@ if (typeof document !== 'undefined') {
 }
 
 /* ==========================================================
-   Typing Effect for Hero Subtitle (Robust & Error-Free)
+   Typing Effect for Hero Subtitle (Smooth, Complete & Looping)
    ========================================================== */
 function initTypingEffect() {
   var typingTarget = document.getElementById('typed-text');
@@ -91,15 +91,11 @@ function initTypingEffect() {
   ];
 
   var roleIndex = 0;
-  var currentWord = roles[roleIndex];
+  var charIndex = roles[0].length;
+  var isDeleting = true;
 
-  // Check if target already has initial text (e.g. static fallback in HTML)
-  var initialText = typingTarget.textContent ? typingTarget.textContent.replace(/^\s+|\s+$/g, '') : '';
-  var hasInitialText = (initialText.length > 0);
-
-  var charIndex = hasInitialText ? initialText.length : 0;
-  var isDeleting = hasInitialText;
-  var initialDelay = hasInitialText ? 1800 : 200;
+  // Guarantee that initial text is completely filled
+  typingTarget.textContent = roles[0];
 
   function tick() {
     var fullText = roles[roleIndex];
@@ -110,32 +106,31 @@ function initTypingEffect() {
 
     if (isDeleting) {
       charIndex--;
-      if (charIndex < 0) { charIndex = 0; }
       typingTarget.textContent = fullText.substring(0, charIndex);
+      if (charIndex <= 0) {
+        charIndex = 0;
+        isDeleting = false;
+        roleIndex = (roleIndex + 1) % roles.length;
+        setTimeout(tick, 450); // Pause before typing next word
+        return;
+      }
+      setTimeout(tick, 45); // Deleting speed
     } else {
       charIndex++;
-      if (charIndex > fullText.length) { charIndex = fullText.length; }
       typingTarget.textContent = fullText.substring(0, charIndex);
+      if (charIndex >= fullText.length) {
+        typingTarget.textContent = fullText; // Ensure full text is always completely displayed
+        charIndex = fullText.length;
+        isDeleting = true;
+        setTimeout(tick, 2200); // 2.2 second pause on completed word
+        return;
+      }
+      setTimeout(tick, 85); // Typing speed
     }
-
-    var speed = isDeleting ? 45 : 90;
-
-    // Word completely typed out
-    if (!isDeleting && charIndex >= fullText.length) {
-      charIndex = fullText.length;
-      speed = 2000; // Pause at end of word so user can read comfortably
-      isDeleting = true;
-    } else if (isDeleting && charIndex <= 0) {
-      charIndex = 0;
-      isDeleting = false;
-      roleIndex = (roleIndex + 1) % roles.length;
-      speed = 400; // Pause before typing next word
-    }
-
-    setTimeout(tick, speed);
   }
 
-  setTimeout(tick, initialDelay);
+  // Display initial complete role for 2.2s before beginning smooth rotation
+  setTimeout(tick, 2200);
 }
 
 /* ==========================================================
