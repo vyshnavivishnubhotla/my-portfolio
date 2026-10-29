@@ -162,7 +162,7 @@ function initThemeToggle() {
     prefersDark = true;
   }
 
-  var currentTheme = savedTheme ? savedTheme : (prefersDark ? 'dark' : 'light');
+  var currentTheme = 'dark' ;
   document.documentElement.setAttribute('data-theme', currentTheme);
   updateThemeIcon(currentTheme);
 
